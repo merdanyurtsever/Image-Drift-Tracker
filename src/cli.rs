@@ -28,11 +28,20 @@ pub struct ScanArgs {
     #[arg(long)]
     pub baseline_dir: Option<PathBuf>,
 
+    #[arg(long)]
+    pub home_baseline: Option<PathBuf>,
+
     #[arg(long, action = clap::ArgAction::Append)]
     pub include: Vec<PathBuf>,
 
     #[arg(long, action = clap::ArgAction::Append)]
     pub exclude: Vec<PathBuf>,
+
+    #[arg(long, action = clap::ArgAction::Append)]
+    pub metadata_only: Vec<PathBuf>,
+
+    #[arg(long)]
+    pub usr_metadata_only: bool,
 
     #[arg(long)]
     pub no_defaults: bool,

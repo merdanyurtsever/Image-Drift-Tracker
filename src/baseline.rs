@@ -68,12 +68,34 @@ fn rpm_ostree_root() -> Result<PathBuf> {
         .osname
         .as_deref()
         .context("deployment missing osname")?;
-    let checksum = deployment
-        .base_checksum
-        .as_deref()
-        .or(deployment.checksum.as_deref())
-        .context("deployment missing checksum")?;
+    let deployment_checksum = deployment.checksum.as_deref();
+    let base_checksum = deployment.base_checksum.as_deref();
 
+    if deployment_checksum.is_none() && base_checksum.is_none() {
+        bail!("deployment missing checksum");
+    }
+
+    if let Some(checksum) = deployment_checksum {
+        match find_deployment_dir(osname, checksum) {
+            Ok(root) => return Ok(root),
+            Err(err) => {
+                if let Some(base) = base_checksum {
+                    if base != checksum {
+                        if let Ok(root) = find_deployment_dir(osname, base) {
+                            eprintln!(
+                                "warn: deployment checksum not found; using base checksum {}",
+                                base
+                            );
+                            return Ok(root);
+                        }
+                    }
+                }
+                return Err(err);
+            }
+        }
+    }
+
+    let checksum = base_checksum.context("deployment missing checksum")?;
     find_deployment_dir(osname, checksum)
 }
 

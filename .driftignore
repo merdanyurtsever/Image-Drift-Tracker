@@ -1,0 +1,13 @@
+# Add gitignore-style patterns to exclude files and folders from drift scans.
+# Patterns are matched against absolute paths rooted at /.
+#
+# Examples:
+# **/*-backup/
+# **/*.log
+# **/*.db
+# /home/user/.config/Google/
+# /home/user/.config/GNS3/
+#**/.lock
+#**/*.pid
+#**/*.log
+#**/*.db-journal

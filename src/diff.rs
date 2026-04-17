@@ -88,5 +88,8 @@ fn classify_change(before: &FileEntry, after: &FileEntry) -> DriftKind {
 }
 
 fn metadata_equal(before: &FileEntry, after: &FileEntry) -> bool {
-    before.mode == after.mode && before.uid == after.uid && before.gid == after.gid
+    before.mode == after.mode
+        && before.uid == after.uid
+        && before.gid == after.gid
+        && before.size == after.size
 }

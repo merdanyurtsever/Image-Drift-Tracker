@@ -2,10 +2,10 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use content_inspector::ContentType;
 use owo_colors::OwoColorize;
-use similar::{utils::UnifiedDiffBuilder, TextDiff};
+use similar::TextDiff;
 
 use crate::diff::{DiffEntry, DriftKind};
 use crate::report::{Report, ReportItem};
@@ -75,19 +75,24 @@ pub fn print_unified_diffs(
 }
 
 fn format_item(item: &ReportItem, use_color: bool) -> String {
-    let (prefix, color) = match item.kind {
-        DriftKind::Added => ("+", owo_colors::colors::Green),
-        DriftKind::Removed => ("-", owo_colors::colors::Red),
-        DriftKind::ContentChanged => ("~", owo_colors::colors::Yellow),
-        DriftKind::MetadataChanged => ("!", owo_colors::colors::Blue),
-        DriftKind::SymlinkTargetChanged => ("@", owo_colors::colors::Magenta),
-        DriftKind::TypeChanged => ("#", owo_colors::colors::Cyan),
-    };
-
     let prefix = if use_color {
-        prefix.color(color).to_string()
+        match item.kind {
+            DriftKind::Added => "+".green().to_string(),
+            DriftKind::Removed => "-".red().to_string(),
+            DriftKind::ContentChanged => "~".yellow().to_string(),
+            DriftKind::MetadataChanged => "!".blue().to_string(),
+            DriftKind::SymlinkTargetChanged => "@".magenta().to_string(),
+            DriftKind::TypeChanged => "#".cyan().to_string(),
+        }
     } else {
-        prefix.to_string()
+        match item.kind {
+            DriftKind::Added => "+".to_string(),
+            DriftKind::Removed => "-".to_string(),
+            DriftKind::ContentChanged => "~".to_string(),
+            DriftKind::MetadataChanged => "!".to_string(),
+            DriftKind::SymlinkTargetChanged => "@".to_string(),
+            DriftKind::TypeChanged => "#".to_string(),
+        }
     };
 
     format!("{} {}", prefix, item.path)
@@ -107,17 +112,19 @@ fn unified_diff(old_path: &Path, new_path: &Path, display_path: &Path) -> Result
     let new_text = String::from_utf8_lossy(&new_bytes);
 
     let diff = TextDiff::from_lines(&old_text, &new_text);
-    let mut output = String::new();
+    let mut output = Vec::new();
 
     let header_old = format!("baseline{}", display_path.display());
     let header_new = format!("live{}", display_path.display());
 
-    UnifiedDiffBuilder::new()
+    diff.unified_diff()
         .context_radius(3)
         .header(&header_old, &header_new)
-        .to_writer(&diff, &mut output)
-        .map_err(|_| anyhow(format!("write diff for {}", display_path.display())))?;
+        .to_writer(&mut output)
+        .map_err(|_| anyhow::Error::msg(format!("write diff for {}", display_path.display())))?;
 
+    let output = String::from_utf8(output)
+        .map_err(|_| anyhow::Error::msg(format!("diff output is not utf-8 for {}", display_path.display())))?;
     Ok(Some(output))
 }
 
